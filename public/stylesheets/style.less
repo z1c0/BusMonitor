@@ -1,0 +1,93 @@
+@signcolormain: rgb(240, 240, 240);
+@signcolordarker: rgb(220, 220, 220);
+@logocolor: green;
+@logobackground: yellow;
+@signwidth: 600px;
+@signborderwidth: 20px;
+
+.center() {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.vertical-align() {
+  position: relative;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
+.sign(@w)
+{
+  .center();
+  width: @w;
+  background-color: @signcolormain;
+  border-color: @signcolordarker; 
+  border-width: @signborderwidth;
+  border-style: solid;
+  border-radius: 5px;
+}
+
+.circle(@w) {
+  border-radius: 50%;
+	width: @w;
+	height: @w; 
+}
+
+.semicircle(@w) {
+  .sign(@w);
+  height: @w / 2;
+  border-radius:@w / 2 @w / 2 0 0;
+  -moz-border-radius: @w / 2 @w / 2 0 0;
+  -webkit-border-radius: @w / 2 @w / 2 0 0;
+}
+
+
+body {
+  background-color: lightblue;
+  padding: 50px;
+  font: 16px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+#logo {
+  .center();
+  .circle(120px);
+  margin-top: 20px;
+  color: @logocolor;
+  background-color: @logobackground;  
+  border-color: @logocolor; 
+  border-width: 10px;
+  border-style: solid;
+  line-height: 120px;
+  font-weight: bold;
+  font-size: 5em;
+  text-align: center;
+}
+
+ .signtext
+ {
+   font-size: 22px;
+   margin-left: 1em;
+ }
+ 
+ .signtextbold
+ {
+   font-size: 34px;
+   font-weight: bold;
+   text-align: center;
+ }
+
+ #sign-upper {
+  .semicircle(@signwidth);
+ } 
+ 
+ #sign-lower {
+  .sign(@signwidth);
+  margin-top: 10px;
+  height: 50px;  
+ }  

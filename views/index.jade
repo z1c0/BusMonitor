@@ -2,4 +2,14 @@ extends layout
 
 block content
   h1= title
-  p Welcome to #{title}
+  p ... #{data} ...
+  
+  #sign-upper
+    #logo H
+    p.signtextbold Froschberg
+    p.signtext Linie 26, 27, 46
+  #sign-lower
+    p bla
+
+block foot
+  p: #[a(href="http://wolfgang-ziegler.com") Wolfgang Ziegler] #[span &#169; #{year}]  
