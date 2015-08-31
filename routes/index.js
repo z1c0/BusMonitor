@@ -1,33 +1,41 @@
 var express = require('express');
 var router = express.Router();
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  
+function getData(f) {
   var http = require('http');
     var options = {
       host: 'www.google.com',
       path: '/index.html'
     };
   
-  var req2 = http.get(options, function(res2) {
-    console.log('STATUS: ' + res.statusCode);
-    console.log('HEADERS: ' + JSON.stringify(res.headers));
+  var req = http.get(options, function(res) {
+    //console.log('STATUS: ' + res.statusCode);
+    //console.log('HEADERS: ' + JSON.stringify(res.headers));
   
-    // Buffer the body entirely for processing as a whole.
     var body = "";
-    res2.on('data', function(chunk) {
+    res.on('data', function(chunk) {
       body += chunk;
     }).on('end', function() {
-      console.log('BODY: ' + body);
-      // ...and/or process the entire body here.
-      res.render('index', { title: 'Express', data: body, year : new Date().getFullYear() });
+      //console.log('BODY: ' + body);
+      f(body);
     })
-  });
-  
-  req2.on('error', function(e) {
+  });  
+  req.on('error', function(e) {
     console.log('ERROR: ' + e.message);
   });  
+}
+
+
+
+
+router.get('/text', function(req, res, next) {
+  getData(function(o) { res.send(o); });
+});
+
+router.get('/', function(req, res, next) {
+  getData(function(o) { 
+    res.render('index', { title: 'Express', data: o, year : new Date().getFullYear() });
+  });
 });
 
 module.exports = router;
