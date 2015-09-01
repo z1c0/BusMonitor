@@ -1,14 +1,26 @@
 extends layout
 
-block content
-  h1= title
+block head
+  p.textright #[a(href="/json") JSON] | #[a(href="/text") Text]
     
+block content   
   #sign-upper
     #logo H
     p.signtextbold Froschberg
     p.signtext Linie 26, 27, 46
   #sign-lower
-    p #{data}
+    table
+      thead
+        tr
+          th.signtext Linie
+          th.signtext Ziel
+          th.signtext Abfahrt <br> in Min.
+      tbody
+        each t, i in times
+          tr
+            td #{i}
+            td #{t.direction}
+            td.textright #{t.minutes}
 
 block foot
-  p #[a(href="http://wolfgang-ziegler.com") Wolfgang Ziegler] #[span &#169; #{year}]  
+  p.textright #[a(href="http://wolfgang-ziegler.com") Wolfgang Ziegler] #[span &#169; #{year}]  

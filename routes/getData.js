@@ -43,15 +43,14 @@ function getTimes(result, renderCallback) {
     var minutes = d.$.countdown;
     //console.log("Linie " + lineNr + " (" + direction + "): " + minutes + " min.");
     if (filter(lineNr, direction)) {
-      var id = lineNr + " " + direction;
-      if (id in nextDepartures) {
-        minutes = Math.min(minutes, nextDepartures[id]);
+      if (lineNr in nextDepartures) {
+        minutes = Math.min(minutes, nextDepartures[lineNr].minutes);
       } 
-      nextDepartures[id] = minutes;
+      nextDepartures[lineNr] = { direction: direction, minutes: minutes  };
     }
   }
   //console.log(nextDepartures);
-  renderCallback(JSON.stringify(nextDepartures));
+  renderCallback(nextDepartures);
 }
 
 function getLines(result, renderCallback) { 
