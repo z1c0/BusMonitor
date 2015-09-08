@@ -29,6 +29,8 @@ function filter(line, direction, minutes)
 {
   return (minutes >= 0 && minutes < 100) &&
          ((line == "27" && direction == "Linz Fernheizkraftwerk") ||
+          (line == "27" && direction == "Linz Lederergasse") ||
+          (line == "27" && direction == "Linz Hafen") ||
           (line == "46" && direction == "Linz Hafen") ||
           (line == "26" && direction == "Linz St. Margarethen"));
 }
