@@ -46,9 +46,14 @@ function getTimes(result, renderCallback) {
     var minutes = d.$.countdown - 1;
     //console.log("Linie " + lineNr + " (" + direction + "): " + minutes + " min.");
     if (filter(lineNr, direction, minutes)) {
-      if (lineNr in nextDepartures) {
-        minutes = Math.min(minutes, nextDepartures[lineNr].minutes);
-      } 
+      if (lineNr in nextDepartures && nextDepartures[lineNr].minutes < minutes) {
+        minutes = nextDepartures[lineNr].minutes;
+        direction = nextDepartures[lineNr].direction;
+      }
+      // Remove "Linz " prefix.
+      if (direction.indexOf("Linz ") == 0) {
+        direction = direction.substr(5);
+      }
       nextDepartures[lineNr] = { direction: direction, minutes: minutes  };
     }
   }
