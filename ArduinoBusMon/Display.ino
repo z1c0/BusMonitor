@@ -1,3 +1,4 @@
+
 void drawtext(int x, int y, const char *text, uint16_t color, int size)
 {
   tft.setCursor(x, y);
@@ -5,16 +6,6 @@ void drawtext(int x, int y, const char *text, uint16_t color, int size)
   tft.setTextSize(size);
   tft.setTextWrap(true);
   tft.print(text);
-}
-
-void error(const char* message)
-{
-  tft.fillScreen(ST7735_BLACK);
-  drawtext(0, 0, message, ST7735_RED, 1);
-#ifdef USE_SOFT_SERIAL
-  softSerial.println("ERROR:");
-  softSerial.println(message);
-#endif
 }
 
 void trace(const char* message)

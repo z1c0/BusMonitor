@@ -46,7 +46,7 @@ void setup()
   tft.initR(INITR_BLACKTAB); // initialize a ST7735S chip, black tab
   tft.setRotation(1);
   tft.fillScreen(ST7735_BLACK);
-  drawtext(2, 2, "H.U.G.O\n(c) Wolfgang Ziegler 2016", ST7735_YELLOW, 1);
+  drawtext(2, 2, "H.U.G.O\n (c) z1c0 2016", ST7735_YELLOW, 1);
   //
   // PIR setup
   //
@@ -55,7 +55,7 @@ void setup()
   // Give the sensor some time to calibrate
   for (int i = 0; i < PIR_INIT_SECONDS; i++)
   {
-    drawtext(2 + i * 10, 22, ".", ST7735_YELLOW, 1);
+    drawtext(2 + i * 5, 22, ".", ST7735_YELLOW, 1);
     delay(1000);
   }
   drawtext(2, 32, "OK READY", ST7735_YELLOW, 1);
@@ -75,25 +75,34 @@ void setup()
   softSerial.begin(57600);
 #endif
 
-  tft.fillRect(0, 0, 3, 3, ST7735_GREEN);
-  while (!connectModule())
+  while (true)
   {
+    tft.fillScreen(ST7735_BLACK);
+    drawtext(0, 0, "connecting ESP8266...", ST7735_WHITE, 1);
+    if (connectModule())
+    {
+      break;
+    }
+    drawtext(0, 10, "... failed", ST7735_RED, 1);      
     delay(1000);
   }
-  tft.fillRect(0, 0, 3, 3, ST7735_RED);
+  
   // connect to WiFi
   while (true)
   {
+    tft.fillScreen(ST7735_BLACK);
+    drawtext(0, 0, "connecting WIFI ...", ST7735_WHITE, 1);
     if (connectWiFi())
     {
       break;
     }
     else
     {
-      error("wireless connection");
+      drawtext(0, 10, "... failed", ST7735_RED, 1);      
       delay(1000);
     }
   }
+  tft.fillScreen(ST7735_BLACK);
 }
 
 void loop()
@@ -123,11 +132,11 @@ void loop()
   }
 
   if (motion && now - lastRequestTime > 15000)
-  {    
+  {
     lastRequestTime = now;
     send("GET /json HTTP/1.1\r\nHost: "HOST"\r\nConnection: close\r\n\r\n");
   }
-  
+
   displayTimes();
 }
 
