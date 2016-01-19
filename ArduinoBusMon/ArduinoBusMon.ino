@@ -66,7 +66,6 @@ void setup()
     tft.invertDisplay(false);
     delay(100);
   }
-  tft.fillScreen(ST7735_BLACK);
 
   Serial.begin(115200);
   Serial.setTimeout(5000);
@@ -75,38 +74,12 @@ void setup()
   softSerial.begin(57600);
 #endif
 
-  while (true)
-  {
-    tft.fillScreen(ST7735_BLACK);
-    drawtext(0, 0, "connecting ESP8266...", ST7735_WHITE, 1);
-    if (connectModule())
-    {
-      break;
-    }
-    drawtext(0, 10, "... failed", ST7735_RED, 1);      
-    delay(1000);
-  }
-  
-  // connect to WiFi
-  while (true)
-  {
-    tft.fillScreen(ST7735_BLACK);
-    drawtext(0, 0, "connecting WIFI ...", ST7735_WHITE, 1);
-    if (connectWiFi())
-    {
-      break;
-    }
-    else
-    {
-      drawtext(0, 10, "... failed", ST7735_RED, 1);      
-      delay(1000);
-    }
-  }
-  tft.fillScreen(ST7735_BLACK);
+  initESP8266();
 }
 
 void loop()
 {
+  int errorCount = 0;
   unsigned long now = millis();
 
   if (digitalRead(PIR_PIN) == HIGH)
@@ -134,7 +107,19 @@ void loop()
   if (motion && now - lastRequestTime > 15000)
   {
     lastRequestTime = now;
-    send("GET /json HTTP/1.1\r\nHost: "HOST"\r\nConnection: close\r\n\r\n");
+    if (send("GET /json HTTP/1.1\r\nHost: "HOST"\r\nConnection: close\r\n\r\n"))
+    {
+      errorCount = 0;
+    }
+    else
+    {
+      errorCount++;
+    }
+  }
+  if (errorCount > 10)
+  {
+    initESP8266();
+    errorCount = 0;
   }
 
   displayTimes();

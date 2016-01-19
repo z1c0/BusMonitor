@@ -50,13 +50,14 @@ boolean connectModule()
   {
     performCommand("AT+GMR", "OK");
     //performCommand("AT+CIOBAUD?");
-    performCommand("AT+CWMODE=1", NULL);
+    delay(1000);
   }
   return ok;
 }
 
 boolean connectWiFi()
 {
+  performCommand("AT+CWMODE=1", NULL);
   bool ok = performCommand("AT+CWJAP=\""SSID"\",\""PASS"\"", "OK");
   if (ok)
   {
@@ -66,8 +67,42 @@ boolean connectWiFi()
   return ok;
 }
 
-void send(const char* msg)
+void initESP8266()
 {
+  tft.fillScreen(ST7735_BLACK);
+  while (true)
+  {
+    tft.fillScreen(ST7735_BLACK);
+    drawtext(0, 0, "connecting ESP8266...", ST7735_WHITE, 1);
+    if (connectModule())
+    {
+      break;
+    }
+    drawtext(0, 10, "... failed", ST7735_RED, 1);      
+    delay(1000);
+  }
+  
+  // connect to WiFi
+  while (true)
+  {
+    tft.fillScreen(ST7735_BLACK);
+    drawtext(0, 0, "connecting WIFI ...", ST7735_WHITE, 1);
+    if (connectWiFi())
+    {
+      break;
+    }
+    else
+    {
+      drawtext(0, 10, "... failed", ST7735_RED, 1);      
+      delay(1000);
+    }
+  }
+  tft.fillScreen(ST7735_BLACK);
+}
+
+bool send(const char* msg)
+{
+  bool ret = false;
   if (!performCommand("AT+CIPSTART=4,\"TCP\",\""HOST"\","PORT, "Error"))
   { 
     String s = "AT+CIPSEND=4,";
@@ -77,8 +112,10 @@ void send(const char* msg)
       if (performCommand(msg, "{"))
       {
         parseHttpResponse();
+        ret = true;
       }
     }
     performCommand("AT+CIPCLOSE=4", NULL);
   }
+  return ret;
 }

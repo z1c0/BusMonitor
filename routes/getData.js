@@ -61,20 +61,24 @@ function getTimes(result, renderCallback) {
   renderCallback(nextDepartures);
 }
 
-function getLines(result, renderCallback) { 
-  var sessionId = result.itdRequest.$.sessionID;
-  var requestId = result.itdRequest.itdDepartureMonitorRequest[0].$.requestID; 
-  var lines = result.itdRequest.itdDepartureMonitorRequest[0].itdServingLines[0].itdServingLine; 
-  //console.log(sessionId);
-  //console.log(requestId);
-  //console.log(lines.length);
-  var urlParams = "sessionID=" + sessionId + "&requestID=" + requestId;
-  for (var i in lines) {
-    var line = lines[i].$
-    //console.log("[" + line.index + "] " + line.number + ": " + line.direction);
-    urlParams += ("&dmLineSelection=" + line.index);
-  }  
-  doRequest(getTimes, urlParams, renderCallback);
+function getLines(result, renderCallback) {
+  try { 
+    var sessionId = result.itdRequest.$.sessionID;
+    var requestId = result.itdRequest.itdDepartureMonitorRequest[0].$.requestID; 
+    var lines = result.itdRequest.itdDepartureMonitorRequest[0].itdServingLines[0].itdServingLine; 
+    //console.log(sessionId);
+    //console.log(requestId);
+    //console.log(lines.length);
+    var urlParams = "sessionID=" + sessionId + "&requestID=" + requestId;
+    for (var i in lines) {
+        var line = lines[i].$
+        //console.log("[" + line.index + "] " + line.number + ": " + line.direction);
+        urlParams += ("&dmLineSelection=" + line.index);
+    }  
+    doRequest(getTimes, urlParams, renderCallback);
+  } catch (ex) {
+      console.log(ex);      
+  }
 }
 
 module.exports = {
