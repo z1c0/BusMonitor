@@ -1,165 +1,143 @@
 #include <ArduinoJson.h>
-#include <SoftwareSerial.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 #include "secret.h"
 using namespace ArduinoJson::Internals;
 
+#define USE_SOFT_SERIAL
+#ifdef USE_SOFT_SERIAL
+#include <SoftwareSerial.h>
+SoftwareSerial softSerial(6, 7);
+#endif
+
+#define PIR_PIN    3
 #define TFT_CS     10
 #define TFT_RST    8
 #define TFT_DC     9
+#define MAX_BUSTIMES 4
+#define SHOW_DURATION 1500
+#define JSON_BUFFER_SIZE 200
+#define PIR_INIT_SECONDS 10
+#define PIR_PAUSE 600000L
+//#define HOST "busmon.azurewebsites.net"
+#define HOST "192.168.1.121"
+#define PORT "3000"
 
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
-SoftwareSerial softSerial(6, 7);
+Adafruit_ST7735 tft(TFT_CS,  TFT_DC, TFT_RST);
+char json[JSON_BUFFER_SIZE];
 
-
-
-void drawtext(int x, int y, const char *text, uint16_t color, int size)
+struct BusTime
 {
-  tft.setCursor(x, y);
-  tft.setTextColor(color);
-  tft.setTextSize(size);
-  tft.setTextWrap(true);
-  tft.print(text);
-}
+  const char* line;
+  const char* direction;
+  const char* minutes;
+};
+BusTime busTimes[MAX_BUSTIMES] = {0};
+int currentLine = 0;
+unsigned long lastRequestTime = 0;
+unsigned long lastRenderTime = 0;
+unsigned long lastMotionTime = 0;
+bool motion = false;
 
-void error(const char* message)
+
+void setup()
 {
+  tft.initR(INITR_BLACKTAB); // initialize a ST7735S chip, black tab
+  tft.setRotation(1);
   tft.fillScreen(ST7735_BLACK);
-  drawtext(0, 0, message, ST7735_RED, 2);
-}
-
-void trace(const char* message)
-{
-  //tft.fillScreen(ST7735_BLACK);
-  //drawtext(0, 0, message, ST7735_WHITE, 1);
-  softSerial.println(message);
-}
-
-void displayTimes(const JsonObject& root)
-{
-  for (ListConstIterator<JsonPair> it = root.begin(); it != root.end(); ++it)
+  drawtext(2, 2, "H.U.G.O\n (c) z1c0 2016", ST7735_YELLOW, 1);
+  //
+  // PIR setup
+  //
+  pinMode(PIR_PIN, INPUT);
+  digitalWrite(PIR_PIN, LOW);
+  // Give the sensor some time to calibrate
+  for (int i = 0; i < PIR_INIT_SECONDS; i++)
   {
-    const char* line = it->key;
-    const char* dir = root[line]["direction"];
-    int minutes = root[line]["minutes"];
-    softSerial.println(line);
-    softSerial.println(dir);
-    softSerial.println(minutes);
-    softSerial.println("----------------------");
-
-    tft.fillScreen(ST7735_BLACK);
-    drawtext(110, 10, line, ST7735_GREEN, 4);
-    drawtext(5, 35, dir, ST7735_GREEN, 1);
-    drawtext(0, 70, String(minutes).c_str(), ST7735_BLUE, 7);
-    drawtext(75, 105, "Minuten", ST7735_GREEN, 2);
-
-    delay(2000);
+    drawtext(2 + i * 5, 22, ".", ST7735_YELLOW, 1);
+    delay(1000);
   }
-}
-
-boolean performCommand(const char* cmd, bool parseHttpResponse = false)
-{
-  trace("CMD: ");
-  trace(cmd);
-  Serial.println(cmd);
-  Serial.flush();
-
-  delay(300);
-
-  String s = Serial.readString();
-  trace("RESP >>>>");
-  trace(s.c_str());
-  //trace("RESP <<<<");
-
-  if (parseHttpResponse)
+  drawtext(2, 32, "OK READY", ST7735_YELLOW, 1);
+  for (int i = 0; i < 5; i++)
   {
-    int pos = s.indexOf('{');
-    int pos2 = s.lastIndexOf('}');
-    softSerial.println(pos);
-    softSerial.println(pos2);
-    if (pos >= 0)
+    tft.invertDisplay(true);
+    delay(100);
+    tft.invertDisplay(false);
+    delay(100);
+  }
+  tft.fillScreen(ST7735_BLACK);
+
+  Serial.begin(115200);
+  Serial.setTimeout(5000);
+
+#ifdef USE_SOFT_SERIAL
+  softSerial.begin(57600);
+#endif
+
+  while (true)
+  {
+    tft.fillScreen(ST7735_BLACK);
+    drawtext(0, 0, "connecting ESP8266...", ST7735_WHITE, 1);
+    if (connectModule())
     {
-      s[pos2 + 1] = 0;
-      trace(&s[pos]);
-      StaticJsonBuffer<200> jsonBuffer;
-      JsonObject& root = jsonBuffer.parseObject(&s[pos]);
-      if (root.success())
-      {
-        displayTimes(root);
-      }
+      break;
+    }
+    drawtext(0, 10, "... failed", ST7735_RED, 1);      
+    delay(1000);
+  }
+  
+  // connect to WiFi
+  while (true)
+  {
+    tft.fillScreen(ST7735_BLACK);
+    drawtext(0, 0, "connecting WIFI ...", ST7735_WHITE, 1);
+    if (connectWiFi())
+    {
+      break;
+    }
+    else
+    {
+      drawtext(0, 10, "... failed", ST7735_RED, 1);      
+      delay(1000);
     }
   }
-  return true;
+  tft.fillScreen(ST7735_BLACK);
 }
 
-boolean connectModule()
+void loop()
 {
-  softSerial.println("connectModule");
+  unsigned long now = millis();
 
-  /*
-  Serial.println("AT+RST");
-  if (Serial.find("ready"))
+  if (digitalRead(PIR_PIN) == HIGH)
   {
-    softSerial.println("ready");
+    tft.fillRect(0, 0, 3, 3, ST7735_YELLOW);
+    if (!motion)
+    {
+      // makes sure we wait for a transition to LOW before any further output is made:
+      motion = true;
+      trace("motion detected");
+    }
+    lastMotionTime = now;
   }
-  else
+  if (digitalRead(PIR_PIN) == LOW)
   {
-    softSerial.println("not ready!");
-    return false;
+    // if the sensor is low for more than the given pause, we assume that no more motion is going to happen
+    if (motion && (now - lastMotionTime) > PIR_PAUSE)
+    {
+      // makes sure this block of code is only executed again after a new motion sequence has been detected
+      motion = false;
+      trace("motion ended");
+    }
   }
-  */
-  performCommand("AT+RST");
-  performCommand("AT+GMR");
-  performCommand("AT+CIOBAUD?");
-  performCommand("AT+CWMODE=1");
 
-  return true;
-}
-boolean connectWiFi()
-{
-  trace("connectWiFi");
-  String cmd = "AT+CWJAP=\"";
-  cmd += SSID;
-  cmd += "\",\"";
-  cmd += PASS;
-  cmd += "\"";
-
-  Serial.println(cmd);
-
-  delay(1000);
-
-  if (Serial.find("OK"))
+  if (motion && now - lastRequestTime > 15000)
   {
-    performCommand("AT+CIFSR");
-    performCommand("AT+CIPMUX=1");
-    return true;
+    lastRequestTime = now;
+    send("GET /json HTTP/1.1\r\nHost: "HOST"\r\nConnection: close\r\n\r\n");
   }
-  else
-  {
-    return false;
-  }
+
+  displayTimes();
 }
 
-void send(String msg)
-{
-  // specify connection channel and IP
-  String cmd = "AT+CIPSTART=4,\"TCP\",\"";
-  cmd += "busmon.azurewebsites.net";
-  cmd += "\",80";
-  Serial.println(cmd);
-  if (Serial.find("ERROR"))
-  {
-    error("send error");
-    return;
-  }
-
-  String s = "AT+CIPSEND=4,";
-  s += msg.length();
-  performCommand(s.c_str());
-  performCommand(msg.c_str(), true);
-
-  performCommand("AT+CIPCLOSE=4");
-}
 
