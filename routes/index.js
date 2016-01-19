@@ -8,7 +8,7 @@ router.get('/text', function(req, res, next) {
     var data = "";
     console.log(o);
     for (var t in o) {
-      data += (t + ", " + o[t].direction + ", " + o[t].minutes + "\n");    
+      data += (t + ", " + o[t].to + ", " + o[t].in + "\n");    
     }
     res.set('Content-Type', 'text/plain');
     res.send(data); 
