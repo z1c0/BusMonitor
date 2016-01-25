@@ -1,7 +1,5 @@
 void parseHttpResponse()
 { 
-  memset(busTimes, 0, MAX_BUSTIMES * sizeof(BusTime));
-  currentLine = 0;  
   memset(json, 0, JSON_BUFFER_SIZE);
   json[0] = '{';
   if (Serial.readBytes(json + 1, JSON_BUFFER_SIZE - 1) > 0)    
@@ -12,13 +10,16 @@ void parseHttpResponse()
     JsonObject& root = jsonBuffer.parseObject(json);
     if (root.success())
     {
+      busTimes.clear();
+      busTimes.lastUpdate = millis();
+      currentLine = 0;  
       int i = 0;
       for (ListConstIterator<JsonPair> it = root.begin(); it != root.end(); ++it)
       {
         const char* line = it->key;
-        busTimes[i].line = line;
-        busTimes[i].direction = root[line]["to"];
-        busTimes[i].minutes = root[line]["in"];
+        busTimes.departures[i].line = line;
+        busTimes.departures[i].direction = root[line]["to"];
+        busTimes.departures[i].minutes = root[line]["in"];
         i++;
       }
     }
@@ -39,7 +40,7 @@ bool performCommand(const char* cmd, char* expect)
   {
     ret = Serial.find(expect);
   }  
-  displayTimes();
+  displayTimes(false);
   return ret;
 }
 

@@ -8,6 +8,11 @@ void drawtext(int x, int y, const char *text, uint16_t color, int size)
   tft.print(text);
 }
 
+void clearScreen()
+{
+  tft.fillScreen(ST7735_BLACK);
+}
+
 void trace(const char* message)
 {
   //tft.fillScreen(ST7735_BLACK);
@@ -17,48 +22,67 @@ void trace(const char* message)
 #endif
 }
 
-void displayTimes()
+void displayTimes(bool showNoData)
 {
   unsigned long now = millis();
+  //
+  // old bus data?
+  //
+  unsigned long diff = now - busTimes.lastUpdate;
+  if (diff  > 1000 * 60)
+  {
+    int color = ST7735_YELLOW;
+    if (diff > 1000 * 60 * 2)
+    {
+      color = ST7735_RED;
+    }
+    drawtext(tft.width() - 10, 0, "!", color, 1);    
+    if (diff > 1000 * 60 * 5)
+    {
+      busTimes.clear();
+    }
+  }
+  
   if (now - lastRenderTime > SHOW_DURATION)
   {  
     lastRenderTime = now;
 
     trace("*** displayTimes ***");    
-    if (currentLine < MAX_BUSTIMES && busTimes[currentLine].line != NULL)
+    if (currentLine < MAX_DEPARTURES && busTimes.departures[currentLine].line != NULL)
     {
-      trace(busTimes[currentLine].direction);
+      trace(busTimes.departures[currentLine].direction);
       
-      tft.fillScreen(ST7735_BLACK);
-      drawtext(110, 10, busTimes[currentLine].line, ST7735_GREEN, 4);
-      drawtext(5, 35, busTimes[currentLine].direction, ST7735_GREEN, 1);
-      drawtext(0, 70, busTimes[currentLine].minutes, ST7735_BLUE, 7);
+      clearScreen();
+      drawtext(110, 10, busTimes.departures[currentLine].line, ST7735_GREEN, 4);
+      drawtext(5, 35, busTimes.departures[currentLine].direction, ST7735_GREEN, 1);
+      drawtext(0, 70, busTimes.departures[currentLine].minutes, ST7735_BLUE, 7);
       drawtext(75, 105, "Minuten", ST7735_GREEN, 2);
       currentLine++;
     }
-    else if (busTimes[0].line != NULL)
+    else if (busTimes.departures[0].line != NULL)
     {
       trace("overview");
       
       // show overview  
-      tft.fillScreen(ST7735_BLACK);
+      clearScreen();
       int y = 5;
-      for (int i = 0; i < MAX_BUSTIMES; i++)
+      for (int i = 0; i < MAX_DEPARTURES; i++)
       {
-        if (busTimes[i].line != NULL)
+        if (busTimes.departures[i].line != NULL)
         {
-          drawtext(5, y, busTimes[i].line, ST7735_GREEN, 1);
-          drawtext(25, y, busTimes[i].direction, ST7735_GREEN, 1);
-          drawtext(5, y + 10, busTimes[i].minutes, ST7735_BLUE, 1);
+          drawtext(5, y, busTimes.departures[i].line, ST7735_GREEN, 1);
+          drawtext(25, y, busTimes.departures[i].direction, ST7735_GREEN, 1);
+          drawtext(5, y + 10, busTimes.departures[i].minutes, ST7735_BLUE, 1);
           drawtext(25, y + 10, "Minuten", ST7735_GREEN, 1);
           y += 30;
         }
       }
       currentLine = 0;
     }
-    else
-    {
-      trace("no bus data :(");
+    else if (showNoData)
+    {      
+      clearScreen();      
+      drawtext(random(40), random(40), ":-/", ST7735_GREEN, 2);
     }
   }
 }

@@ -15,25 +15,31 @@ SoftwareSerial softSerial(6, 7);
 #define TFT_CS     10
 #define TFT_RST    8
 #define TFT_DC     9
-#define MAX_BUSTIMES 4
+#define MAX_DEPARTURES 4
 #define SHOW_DURATION 1500
 #define JSON_BUFFER_SIZE 200
-#define PIR_INIT_SECONDS 10
+#define PIR_INIT_SECONDS 25
 #define PIR_PAUSE 600000L
 //#define HOST "busmon.azurewebsites.net"
 #define HOST "192.168.1.121"
-#define PORT "3000"
+#define PORT "4000"
 
 Adafruit_ST7735 tft(TFT_CS,  TFT_DC, TFT_RST);
 char json[JSON_BUFFER_SIZE];
 
-struct BusTime
+struct Departures
 {
   const char* line;
   const char* direction;
   const char* minutes;
 };
-BusTime busTimes[MAX_BUSTIMES] = {0};
+struct BusTimes
+{
+  unsigned long lastUpdate;
+  Departures departures[MAX_DEPARTURES];
+  void clear() { memset(departures, 0, sizeof(Departures) * MAX_DEPARTURES); }
+};
+BusTimes busTimes;
 int currentLine = 0;
 unsigned long lastRequestTime = 0;
 unsigned long lastRenderTime = 0;
@@ -43,9 +49,10 @@ bool motion = false;
 
 void setup()
 {
+  randomSeed(analogRead(0));
   tft.initR(INITR_BLACKTAB); // initialize a ST7735S chip, black tab
-  tft.setRotation(1);
-  tft.fillScreen(ST7735_BLACK);
+  tft.setRotation(3);
+  clearScreen();
   drawtext(2, 2, "H.U.G.O\n (c) z1c0 2016", ST7735_YELLOW, 1);
   //
   // PIR setup
@@ -84,12 +91,15 @@ void loop()
 
   if (digitalRead(PIR_PIN) == HIGH)
   {
-    tft.fillRect(0, 0, 3, 3, ST7735_YELLOW);
     if (!motion)
     {
       // makes sure we wait for a transition to LOW before any further output is made:
       motion = true;
       trace("motion detected");
+      tft.wake();
+      tft.fillRect(0, 0, 5, 5, ST7735_YELLOW);
+      delay(500);
+      clearScreen();
     }
     lastMotionTime = now;
   }
@@ -101,13 +111,14 @@ void loop()
       // makes sure this block of code is only executed again after a new motion sequence has been detected
       motion = false;
       trace("motion ended");
+      tft.sleep();
     }
   }
 
   if (motion && now - lastRequestTime > 15000)
   {
     lastRequestTime = now;
-    if (send("GET /json HTTP/1.1\r\nHost: "HOST"\r\nConnection: close\r\n\r\n"))
+    if (send("GET /busmon/json HTTP/1.1\r\nHost: "HOST"\r\nConnection: close\r\n\r\n"))
     {
       errorCount = 0;
     }
@@ -115,14 +126,13 @@ void loop()
     {
       errorCount++;
     }
+    displayTimes(true);
   }
   if (errorCount > 10)
   {
     initESP8266();
     errorCount = 0;
   }
-
-  displayTimes();
 }
 
 
