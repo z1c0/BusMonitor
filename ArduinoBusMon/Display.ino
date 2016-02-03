@@ -22,7 +22,7 @@ void trace(const char* message)
 #endif
 }
 
-void displayTimes(bool showNoData)
+void displayTimes()
 {
   unsigned long now = millis();
   //
@@ -79,10 +79,10 @@ void displayTimes(bool showNoData)
       }
       currentLine = 0;
     }
-    else if (showNoData)
+    else
     {      
       clearScreen();      
-      drawtext(random(40), random(40), ":-/", ST7735_GREEN, 2);
+      drawtext(random(80), random(50), ":-|", ST7735_GREEN, 2);
     }
   }
 }

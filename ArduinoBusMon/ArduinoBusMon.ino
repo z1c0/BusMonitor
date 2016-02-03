@@ -126,7 +126,7 @@ void loop()
     {
       errorCount++;
     }
-    displayTimes(true);
+    displayTimes();
   }
   if (errorCount > 10)
   {
