@@ -22,67 +22,45 @@ void trace(const char* message)
 #endif
 }
 
-void displayTimes()
-{
-  unsigned long now = millis();
-  //
-  // old bus data?
-  //
-  unsigned long diff = now - busTimes.lastUpdate;
-  if (diff  > 1000 * 60)
-  {
-    int color = ST7735_YELLOW;
-    if (diff > 1000 * 60 * 2)
-    {
-      color = ST7735_RED;
-    }
-    drawtext(tft.width() - 10, 0, "!", color, 1);    
-    if (diff > 1000 * 60 * 5)
-    {
-      busTimes.clear();
-    }
-  }
-  
-  if (now - lastRenderTime > SHOW_DURATION)
-  {  
-    lastRenderTime = now;
 
-    trace("*** displayTimes ***");    
-    if (currentLine < MAX_DEPARTURES && busTimes.departures[currentLine].line != NULL)
+#define SHOW_DURATION 2500
+
+void displayTimes(JsonArray& array)
+{
+  if (array.success() && array.size() > 0)
+  {
+    for (int j = 0; j < 2; j++)
     {
-      trace(busTimes.departures[currentLine].direction);
-      
-      clearScreen();
-      drawtext(110, 10, busTimes.departures[currentLine].line, ST7735_GREEN, 4);
-      drawtext(5, 35, busTimes.departures[currentLine].direction, ST7735_GREEN, 1);
-      drawtext(0, 70, busTimes.departures[currentLine].minutes, ST7735_BLUE, 7);
-      drawtext(75, 105, "Minuten", ST7735_GREEN, 2);
-      currentLine++;
-    }
-    else if (busTimes.departures[0].line != NULL)
-    {
-      trace("overview");
-      
-      // show overview  
-      clearScreen();
-      int y = 5;
-      for (int i = 0; i < MAX_DEPARTURES; i++)
+      for (int i = 0; i < array.size(); i++)
       {
-        if (busTimes.departures[i].line != NULL)
-        {
-          drawtext(5, y, busTimes.departures[i].line, ST7735_GREEN, 1);
-          drawtext(25, y, busTimes.departures[i].direction, ST7735_GREEN, 1);
-          drawtext(5, y + 10, busTimes.departures[i].minutes, ST7735_BLUE, 1);
-          drawtext(25, y + 10, "Minuten", ST7735_GREEN, 1);
-          y += 30;
-        }
+        const JsonObject& o = array[i];
+        clearScreen();
+        drawtext(110, 10, o["l"], ST7735_GREEN, 4);
+        drawtext(5, 35, o["to"], ST7735_GREEN, 1);
+        drawtext(0, 70, o["in"], ST7735_BLUE, 7);
+        drawtext(75, 105, "Minuten", ST7735_GREEN, 2);
+        
+        delay(SHOW_DURATION);
       }
-      currentLine = 0;
     }
-    else
-    {      
-      clearScreen();      
-      drawtext(random(80), random(50), ":-|", ST7735_GREEN, 2);
-    }
+    //
+    // overview
+    //
+    clearScreen();
+    int y = 5;
+    for (int i = 0; i < array.size(); i++)
+    {
+      const JsonObject& o = array[i];
+      drawtext(5, y, o["l"], ST7735_GREEN, 1);
+      drawtext(25, y, o["to"], ST7735_GREEN, 1);
+      drawtext(5, y + 10, o["in"], ST7735_BLUE, 1);
+      drawtext(25, y + 10, "Minuten", ST7735_GREEN, 1);
+      y += 30;
+    }    
+  }
+  else
+  {
+    clearScreen();      
+    drawtext(random(80), random(50), ":-(", ST7735_GREEN, 2);
   }
 }

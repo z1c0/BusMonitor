@@ -1,26 +1,13 @@
 void parseHttpResponse()
 { 
   memset(json, 0, JSON_BUFFER_SIZE);
-  json[0] = '{';
+  json[0] = '[';
   if (Serial.readBytes(json + 1, JSON_BUFFER_SIZE - 1) > 0)    
   {
-    trace(json);   
-
+    trace(json);
     StaticJsonBuffer<JSON_BUFFER_SIZE> jsonBuffer;
     JsonArray& array = jsonBuffer.parseArray(json);
-    if (array.success())
-    {
-      busTimes.clear();
-      busTimes.lastUpdate = millis();
-      currentLine = 0;  
-      for (int i = 0; i < array.size(); i++)
-      {
-        const JsonObject& o = array[i];
-        busTimes.departures[i].line = o["l"];
-        busTimes.departures[i].direction = o["to"];
-        busTimes.departures[i].minutes = o["in"];
-      }
-    }
+    displayTimes(array);
   }
 }
 
@@ -107,7 +94,7 @@ bool send(const char* msg)
     s += strlen(msg);
     if (performCommand(s.c_str(), ">"))
     {
-      if (performCommand(msg, "{"))
+      if (performCommand(msg, "["))
       {
         parseHttpResponse();
         ret = true;

@@ -3,7 +3,6 @@
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 #include "secret.h"
-using namespace ArduinoJson::Internals;
 
 #define USE_SOFT_SERIAL
 #ifdef USE_SOFT_SERIAL
@@ -16,7 +15,6 @@ SoftwareSerial softSerial(6, 7);
 #define TFT_RST    8
 #define TFT_DC     9
 #define MAX_DEPARTURES 4
-#define SHOW_DURATION 1500
 #define JSON_BUFFER_SIZE 200
 #define PIR_INIT_SECONDS 25
 #define PIR_PAUSE 600000L
@@ -27,25 +25,8 @@ SoftwareSerial softSerial(6, 7);
 Adafruit_ST7735 tft(TFT_CS,  TFT_DC, TFT_RST);
 char json[JSON_BUFFER_SIZE];
 
-struct Departures
-{
-  const char* line;
-  const char* direction;
-  const char* minutes;
-};
-struct BusTimes
-{
-  unsigned long lastUpdate;
-  Departures departures[MAX_DEPARTURES];
-  void clear() { memset(departures, 0, sizeof(Departures) * MAX_DEPARTURES); }
-};
-BusTimes busTimes;
-int currentLine = 0;
-unsigned long lastRequestTime = 0;
-unsigned long lastRenderTime = 0;
 unsigned long lastMotionTime = 0;
 bool motion = false;
-
 
 void setup()
 {
@@ -98,8 +79,6 @@ void loop()
       trace("motion detected");
       tft.wake();
       tft.fillRect(0, 0, 5, 5, ST7735_YELLOW);
-      delay(500);
-      clearScreen();
     }
     lastMotionTime = now;
   }
@@ -115,9 +94,8 @@ void loop()
     }
   }
 
-  if (motion && now - lastRequestTime > 15000)
+  if (motion)
   {
-    lastRequestTime = now;
     if (send("GET /busmon/json HTTP/1.1\r\nHost: "HOST"\r\nConnection: close\r\n\r\n"))
     {
       errorCount = 0;
@@ -126,7 +104,6 @@ void loop()
     {
       errorCount++;
     }
-    displayTimes();
   }
   if (errorCount > 10)
   {
