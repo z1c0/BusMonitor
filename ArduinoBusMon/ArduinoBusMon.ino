@@ -10,6 +10,7 @@
 SoftwareSerial softSerial(6, 7);
 #endif
 
+#define TFT_BACKLIGHT_PIN A3
 #define PIR_PIN    3
 #define TFT_CS     10
 #define TFT_RST    8
@@ -29,12 +30,18 @@ unsigned long lastMotionTime = 0;
 bool motion = false;
 
 void setup()
-{
+{  
+  pinMode(TFT_BACKLIGHT_PIN, OUTPUT);  
+  displayOn(true);
+  
   randomSeed(analogRead(0));
+  
   tft.initR(INITR_BLACKTAB); // initialize a ST7735S chip, black tab
   tft.setRotation(3);
+  
   clearScreen();
   drawtext(2, 2, "H.U.G.O\n (c) z1c0 2016", ST7735_YELLOW, 1);
+    
   //
   // PIR setup
   //
@@ -77,7 +84,7 @@ void loop()
       // makes sure we wait for a transition to LOW before any further output is made:
       motion = true;
       trace("motion detected");
-      tft.wake();
+      displayOn(true);
       tft.fillRect(0, 0, 5, 5, ST7735_YELLOW);
     }
     lastMotionTime = now;
@@ -90,7 +97,7 @@ void loop()
       // makes sure this block of code is only executed again after a new motion sequence has been detected
       motion = false;
       trace("motion ended");
-      tft.sleep();
+      displayOn(false);
     }
   }
 

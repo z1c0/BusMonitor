@@ -1,3 +1,16 @@
+#define ST7735_BLACK   0x0000
+#define ST7735_GRAY    0x8410
+#define ST7735_WHITE   0xFFFF
+#define ST7735_RED     0xF800
+#define ST7735_ORANGE  0xFA60
+#define ST7735_YELLOW  0xFFE0  
+#define ST7735_LIME    0x07FF
+#define ST7735_GREEN   0x07E0
+#define ST7735_CYAN    0x07FF
+#define ST7735_AQUA    0x04FF
+#define ST7735_BLUE    0x001F
+#define ST7735_MAGENTA 0xF81F
+#define ST7735_PINK    0xF8FF
 
 void drawtext(int x, int y, const char *text, uint16_t color, int size)
 {
@@ -6,6 +19,11 @@ void drawtext(int x, int y, const char *text, uint16_t color, int size)
   tft.setTextSize(size);
   tft.setTextWrap(true);
   tft.print(text);
+}
+
+void displayOn(bool on)
+{
+  analogWrite(TFT_BACKLIGHT_PIN, on ? 255 : 0);
 }
 
 void clearScreen()
@@ -23,7 +41,7 @@ void trace(const char* message)
 }
 
 
-#define SHOW_DURATION 2500
+#define SHOW_DURATION 2000
 
 void displayTimes(JsonArray& array)
 {
@@ -37,7 +55,8 @@ void displayTimes(JsonArray& array)
         clearScreen();
         drawtext(110, 10, o["l"], ST7735_GREEN, 4);
         drawtext(5, 35, o["to"], ST7735_GREEN, 1);
-        drawtext(0, 70, o["in"], ST7735_BLUE, 7);
+        int minutes = o["in"];
+        drawtext(0, 70, String(minutes).c_str(), minutes <= 3 ? ST7735_ORANGE : ST7735_BLUE, 7);
         drawtext(75, 105, "Minuten", ST7735_GREEN, 2);
         
         delay(SHOW_DURATION);
@@ -53,7 +72,8 @@ void displayTimes(JsonArray& array)
       const JsonObject& o = array[i];
       drawtext(5, y, o["l"], ST7735_GREEN, 1);
       drawtext(25, y, o["to"], ST7735_GREEN, 1);
-      drawtext(5, y + 10, o["in"], ST7735_BLUE, 1);
+      int minutes = o["in"];
+      drawtext(5, y + 10, String(minutes).c_str(), minutes <= 3 ? ST7735_ORANGE : ST7735_BLUE, 1);
       drawtext(25, y + 10, "Minuten", ST7735_GREEN, 1);
       y += 30;
     }    
