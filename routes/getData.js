@@ -28,11 +28,11 @@ var doRequest = function(callback, urlParams, renderCallback) {
 function filter(line, direction, minutes)
 {
   return (minutes >= 0 && minutes < 100) &&
-         ((line == "27" && direction == "Linz Fernheizkraftwerk") ||
-          (line == "27" && direction == "Linz Lederergasse") ||
-          (line == "27" && direction == "Linz Hafen") ||
-          (line == "46" && direction == "Linz Hafen") ||
-          (line == "26" && direction == "Linz St. Margarethen"));
+         ((line == "27" && direction == "Linz/Donau Fernheizkraftwerk") ||
+          (line == "27" && direction == "Linz/Donau Lederergasse") ||
+          (line == "27" && direction == "Linz/Donau Hafen") ||
+          (line == "46" && direction == "Linz/Donau Hafen") ||
+          (line == "26" && direction == "Linz/Donau St. Margarethen"));
 }
 
 function getTimes(result, renderCallback) {
@@ -40,6 +40,8 @@ function getTimes(result, renderCallback) {
   //console.log(departures);
   var nextDepartures = {}; 
   for (var i in departures) {
+    //console.log(d);
+    //console.log(d.$.itdServingLine);
     var d = departures[i];
     var lineNr = d.itdServingLine[0].$.number;
     var direction = d.itdServingLine[0].$.direction;
