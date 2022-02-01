@@ -7,6 +7,7 @@ var bodyParser = require('body-parser');
 var routes = require('./routes/index');
 var lessMiddleware = require('less-middleware');
 
+console.log("http://localhost:3000");
 var app = express();
 
 // view engine setup
